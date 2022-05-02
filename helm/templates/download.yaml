@@ -1,0 +1,48 @@
+{{- $service := "cwa-server-download" -}}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  schedule: {{ .Values.download.schedule | default "0 * * * *" | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ $service }}
+        spec:
+          containers:
+            - image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.repository $service .Chart.AppVersion | quote }}
+              imagePullPolicy: IfNotPresent
+              name: {{ $service }}
+              env:
+                - name: SPRING_PROFILES_ACTIVE
+                  value: debug,disable-ssl-server,disable-ssl-client-postgres,disable-ssl-client-verification,disable-ssl-client-verification-verify-hostname,disable-ssl-efgs-verification
+              envFrom:
+                - configMapRef:
+                    name: federation
+                - configMapRef:
+                    name: postgres
+                - configMapRef:
+                    name: ssl
+                - secretRef:
+                    name: ssl
+                - configMapRef:
+                    name: federation
+                - secretRef:
+                    name: federation
+                - secretRef:
+                    name: postgres-download
+                - secretRef:
+                    name: postgres-flyway
+              volumeMounts:
+                - name: secrets-volume
+                  mountPath: /secrets
+          restartPolicy: OnFailure
+          volumes:
+            - name: secrets-volume
+              secret:
+                secretName: secret-files
+status: {}

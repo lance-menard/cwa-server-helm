@@ -1,0 +1,51 @@
+{{- $service := "objectstore" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  ports:
+    - name: http
+      port: 8000
+  selector:
+    app: {{ $service }}
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: {{ $service }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service }}
+    spec:
+      containers:
+        - image: zenko/cloudserver
+          env:
+            - name: ENDPOINT
+              value: objectstore
+            - name: REMOTE_MANAGEMENT_DISABLE
+              value: "1"
+            - name: SCALITY_ACCESS_KEY_ID
+              value: {{ .Values.objectstore.accessKey | default ""  | quote }}
+            - name: SCALITY_SECRET_ACCESS_KEY
+              value: {{ .Values.objectstore.secretKey | default "" | quote }}
+          imagePullPolicy: IfNotPresent
+          name: {{ $service }}
+          ports:
+            - containerPort: 8000
+      restartPolicy: Always
+status: {}

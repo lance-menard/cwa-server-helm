@@ -1,0 +1,76 @@
+{{- $service := "cwa-server-distribution" -}}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  schedule: {{ .Values.distribution.schedule | default "0 * * * *" | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ $service }}
+        spec:
+          containers:
+            - image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.repository $service .Chart.AppVersion | quote }}
+              imagePullPolicy: Always
+              name: {{ $service }}
+              env:
+                - name: SPRING_PROFILES_ACTIVE
+                  value: debug,signature-dev,testdata,disable-ssl-client-postgres,local-json-stats
+                - name: VERIFICATION_BASE_URL
+                  value: http://verification-fake:8004
+                - name: SUPPORTED_COUNTRIES
+                  value: DE,FR
+                - name: services.distribution.paths.output
+                  value: /tmp/distribution
+                # Settings for cryptographic artifacts
+                - name: VAULT_FILESIGNING_SECRET
+                  value: file:/secrets/private.pem
+                - name: FORCE_UPDATE_KEYFILES
+                  value: 'false'
+                - name: STATISTICS_FILE_ACCESS_KEY_ID
+                  value: fakeAccessKey
+                - name: STATISTICS_FILE_SECRET_ACCESS_KEY
+                  value: secretKey
+                - name: STATISTICS_FILE_S3_ENDPOINT
+                  value: https://localhost
+                - name: DSC_TRUST_STORE
+                  value: /secrets/dsc_truststore
+                - name: DCC_TRUST_STORE
+                  value: /secrets/dcc_truststore
+              envFrom:
+                - configMapRef:
+                    name: federation
+                - configMapRef:
+                    name: postgres
+                - configMapRef:
+                    name: ssl
+                - secretRef:
+                    name: ssl
+                - secretRef:
+                    name: postgres-distribution
+                - secretRef:
+                    name: postgres-flyway
+                - configMapRef:
+                    name: objectstore
+                - secretRef:
+                    name: objectstore
+              volumeMounts:
+                - name: secrets-volume
+                  mountPath: /secrets
+              # readinessProbe:
+              #   httpGet:
+              #     path: /health
+              #     port: 8080
+              #   periodSeconds: 10
+          restartPolicy: OnFailure
+          volumes:
+            - name: secrets-volume
+              secret:
+                secretName: secret-files
+status: {}

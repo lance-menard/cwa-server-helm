@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ssl
+  namespace: cwa-server
+data:
+  SSL_SUBMISSION_KEYSTORE_PATH: file:/secrets/ssl.p12
+  SSL_CALLBACK_KEYSTORE_PATH: file:/secrets/ssl.p12
+  SSL_FEDERATION_TRUSTSTORE_PATH: file:/secrets/contains_efgs_truststore.jks
+  SSL_VERIFICATION_TRUSTSTORE_PATH: file:/secrets/contains_efgs_truststore.jks

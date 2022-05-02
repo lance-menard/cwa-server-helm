@@ -1,0 +1,72 @@
+{{- $service := "cwa-server-callback" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  ports:
+    - name: http
+      port: 8080
+  selector:
+    app: {{ $service }}
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: {{ $service }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service }}
+    spec:
+      containers:
+        - image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.repository $service .Chart.AppVersion | quote }}
+          imagePullPolicy: IfNotPresent
+          name: {{ $service }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: debug,disable-ssl-client-postgres
+          envFrom:
+            - configMapRef:
+                name: federation
+            - secretRef:
+                name: federation
+            - configMapRef:
+                name: postgres
+            - configMapRef:
+                name: ssl
+            - secretRef:
+                name: ssl
+            - secretRef:
+                name: postgres-callback
+            - secretRef:
+                name: postgres-flyway
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: secrets-volume
+              mountPath: /secrets
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8080
+          #   periodSeconds: 10
+      restartPolicy: Always
+      volumes:
+        - name: secrets-volume
+          secret:
+            secretName: secret-files
+status: {}

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-efgs
+  namespace: cwa-server
+data:
+  VAULT_EFGS_BATCHIGNING_CERTIFICATE: file:/secrets/efgs_signing_cert.pem
+  VAULT_EFGS_BATCHIGNING_SECRET: file:/secrets/private.pem

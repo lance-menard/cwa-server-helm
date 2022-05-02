@@ -1,0 +1,42 @@
+{{- $service := "efgs-fake" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  ports:
+    - name: http
+      port: 8014
+  selector:
+    app: {{ $service }}
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: {{ $service }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service }}
+    spec:
+      containers:
+        - image: roesslerj/cwa-efgs-fake:0.0.5
+          imagePullPolicy: IfNotPresent
+          name: {{ $service }}
+          ports:
+            - containerPort: 8014
+      restartPolicy: Always
+status: {}

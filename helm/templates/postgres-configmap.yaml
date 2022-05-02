@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres
+  namespace: cwa-server
+data:
+  POSTGRESQL_SERVICE_PORT: "5432"
+  POSTGRESQL_SERVICE_HOST: cwa-server-postgresql.cwa-server.svc.cluster.local
+  POSTGRESQL_DATABASE: {{ .Values.postgresql.auth.database }}

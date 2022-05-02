@@ -1,0 +1,74 @@
+{{- $service := "cwa-server-submission" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  ports:
+    - name: http
+      port: 8080
+    - name: actuator
+      port: 8081
+  selector:
+    app: {{ $service }}
+status:
+  loadBalancer: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $service }}
+  name: {{ $service }}
+  namespace: cwa-server
+spec:
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: {{ $service }}
+  template:
+    metadata:
+      labels:
+        app: {{ $service }}
+    spec:
+      containers:
+        - image: {{ printf "%s/%s/%s:%s" .Values.image.registry .Values.image.repository $service .Chart.AppVersion | quote }}
+          imagePullPolicy: IfNotPresent
+          name: {{ $service }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: debug,disable-ssl-client-postgres
+            - name: VERIFICATION_BASE_URL
+              value: http://verification-fake:8004
+            - name: SUPPORTED_COUNTRIES
+              value: DE,FR
+          envFrom:
+            - configMapRef:
+                name: postgres
+            - configMapRef:
+                name: ssl
+            - secretRef:
+                name: ssl
+            - secretRef:
+                name: postgres-submission
+            - secretRef:
+                name: postgres-flyway
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: secrets-volume
+              mountPath: /secrets
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8080
+          #   periodSeconds: 10
+      restartPolicy: Always
+      volumes:
+        - name: secrets-volume
+          secret:
+            secretName: secret-files
+status: {}

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: objectstore
+  namespace: cwa-server
+data:
+  CWA_OBJECTSTORE_ENDPOINT: http://objectstore
+  CWA_OBJECTSTORE_BUCKET: cwa
+  CWA_OBJECTSTORE_PORT: "8000"
